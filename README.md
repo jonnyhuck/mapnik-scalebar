@@ -7,7 +7,7 @@ To use it, you simply you pass three arguments to the `addScaleBar` function:
 
 * `m`: the `mapnik` `Map` object for which the scale bar needs to be drawn
 * `mapImg`: `PIL` `Image` object for the (already rendered) mapnik map
-* `left`:	`Boolean` value describing whether it should be drawn on the left (`True`) or right (`False`)
+* `left`:	`Boolean` value describing whether it should be drawn on the bottom left (`True`) or bottom right (`False`) of the map
 
 For example:
 
@@ -23,7 +23,7 @@ mapnik.render_to_file(m, 'output/map.png', 'png')
 # open that file in PIL
 mapImg = Image.open('output/map.png')
 
-# add a scalebar to the map
+# add a scalebar to the bottom left of the map
 addScaleBar(m, mapImg, True)
 
 # save the image (with scalebar) to the map
