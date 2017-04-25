@@ -46,7 +46,7 @@ def addScaleBar(m, mapImg, left=False):
 	tw, th = draw.textsize(scaleText)
 	
 	# prepare a font
-	font = ImageFont.truetype('data/open-sans/OpenSans-Regular.ttf', 12)
+	font = ImageFont.truetype('./open-sans/OpenSans-Regular.ttf', 12)
 
 	# set scale bar positioning parameters
 	barBuffer  = 5	# distance from scale bar to edge of image
