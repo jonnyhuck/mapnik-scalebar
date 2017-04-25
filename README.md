@@ -1,6 +1,8 @@
 # mapnik-scalebar
 A quick and dirty PIL-based scale bar generator for Mapnik maps
 
+![example scalebar](./images/arran.png)
+
 ## Dependencies
 
 * [Mapnik](http://mapnik.org/) Python bindings
