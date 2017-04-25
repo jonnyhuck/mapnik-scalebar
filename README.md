@@ -22,19 +22,22 @@ For example:
 from PIL import Image
 from scalebar import addScaleBar
 
+# make a mapnik map
+m = mapnik.Map(600, 600)
+
 ...
 
 # render mapnik map to file
-mapnik.render_to_file(m, 'output/map.png', 'png')
+mapnik.render_to_file(m, 'map.png', 'png')
 
 # open that file in PIL
-mapImg = Image.open('output/map.png')
+mapImg = Image.open('map.png')
 
 # add a scalebar to the bottom left of the map
 addScaleBar(m, mapImg, True)
 
 # save the image (with scalebar) to the map
-mapImg.save('output/map2.png', "PNG")
+mapImg.save('map.png', "PNG")
 ```
 
 This function does nothing fancy, you can't tell it how long you want the scalebar to be, what colour, what units, or where on the map to go (other than bottom-left or bottom-right). It is purely intended as a cheap and nasty approach, and one that you can pull to bits and edit in order to make your own scale bars...
