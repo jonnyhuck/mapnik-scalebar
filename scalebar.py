@@ -5,21 +5,60 @@ Draw a quick and dirty scale bar onto a mapnik map
 """
 
 import mapnik
-from math import floor, log10
+from pyproj import Proj
+from math import floor, log10, ceil, radians, cos, hypot
 from PIL import Image, ImageDraw, ImageFont
 
-def addScaleBar(m, mapImg, left=False):
+def equirectangularApproxDistance(x1, y1, x2, y2, R=6371008.771415):
 	"""
-	* Add a scalebar to a map, at a sensible width of approx 20% the width of the map
+	Equirectangular approximation distance measurement used to find the length of a degree in an equirectangular 
+	projection - this reflects how the map will be projected if no map is given
+	"""
+	y1 = radians(y1)
+	x1 = radians(x1)
+	y2 = radians(y2)
+	x2 = radians(x2)
+	x = (x2-x1) * cos((y1+y2) / 2)
+	y = (y2-y1)
+	return hypot(x, y) * R
+
+
+def mm2px(mm, dpi=90.7):
+	"""
+	1 inch = 25.4mm 96dpi is therefore...
+	"""
+	return int(ceil(mm * dpi / 25.4))
+
+
+def getScaleBar(m, R=6371008.771415, dpi=90.7):
+	"""
+	* Construct a quick and dirty scalebar, at a sensible width of approx 20% the width of the map
+	* Returned as a PIL Image object
+	*
+	* Map should be projected. If not, scale will be estimated based upon equirectangular projection
 	*
 	* Parameters:
-	*  - m: 		mapnik Map object
-	*  - mapImg:	PIL Image object for the exported mapnik map
-	*  - left:	boolean value describing whether it should be drawn on the left (True) or right (False)
+	*  - m: 	Mapnik Map object 
+	*  - R: 	Earth Radius (for equirectangular approximation) - default WGS84
+	*  - dpi:	The dpi (resolution at which the map will be printed) - default OGC definition (0.28mm per px)
 	"""
 
-	# get the m per pixel on the map
-	mPerPx = m.scale()
+	# is this a projected map? If not, convert scale to m
+	if Proj(m.srs).is_latlong():
+	
+		# get the extent of the map
+		centre = m.envelope().center()
+		
+		# get the m per pixel on the map (multiply value by length of a degree in m)
+		mPerPx = m.scale() * equirectangularApproxDistance(centre.x, centre.y, centre.x+1, centre.y, R)
+		
+		print
+		print "Warning: Your map is not projected, scale estimated using equrectangular approximation"
+		
+	else:
+	
+		# get the m per pixel on the map
+		mPerPx = m.scale()
 
 	# how many metres is 20% of the width of the map?
 	twentyPc = m.width * 0.2 * mPerPx
@@ -38,62 +77,41 @@ def addScaleBar(m, mapImg, left=False):
 		scaleText = str(int(mScaleBar/1000)) + "km"
 	else:
 		scaleText = str(int(mScaleBar)) + "m"
+		
+	# set scale bar positioning parameters
+	lBuffer    = mm2px(2)	# distance from the line to the end of the box
+	tickHeight = mm2px(3)	# height of the tick marks
+	
+	# new image for scalebar
+	scalebarImg = Image.new('RGB', (int(pxScaleBar+lBuffer+lBuffer), lBuffer+lBuffer+tickHeight), 'white')
 	
 	# get PIL context to draw on
-	draw = ImageDraw.Draw(mapImg)
-	
-	# get the dimensions of the text
-	tw, th = draw.textsize(scaleText)
-	
+	sb_draw = ImageDraw.Draw(scalebarImg)
+
 	# prepare a font
 	font = ImageFont.truetype('./open-sans/OpenSans-Regular.ttf', 12)
+	
+	# get the dimensions of the text
+	tw, th = sb_draw.textsize(scaleText, font=font)
+	
+	sbw, sbh = scalebarImg.size
+		
+	# add background
+	sb_draw.rectangle([
+		(1, 1), (sbw-1, sbh-1)], 
+		outline=('black'), fill=('white'))
 
-	# set scale bar positioning parameters
-	barBuffer  = 5	# distance from scale bar to edge of image
-	lBuffer    = 5	# distance from the line to the end of the background
-	tickHeight = 12	# height of the tick marks
+	# add lines
+	sb_draw.line([
+		(lBuffer, sbh-tickHeight-lBuffer), 
+		(lBuffer, sbh-lBuffer),
+		(lBuffer+pxScaleBar, sbh-lBuffer), 
+		(lBuffer+pxScaleBar, sbh-tickHeight-lBuffer)], 
+		fill='black', width=1)
+ 
+	# add label
+	sb_draw.text(
+		((sbw-tw)/2, sbh-tickHeight-lBuffer-mm2px(1.5)), 
+		scaleText, fill='black', font=font)
 	
-	# draw scale bar on bottom left...
-	if left:
-	
-		# add background
-		draw.rectangle([(pxScaleBar+lBuffer+lBuffer+barBuffer, 
-			m.height-barBuffer-lBuffer-lBuffer-tickHeight),
-			(barBuffer,m.height-barBuffer)], 
-			outline=(0,0,0), fill=(255,255,255))
-	
-		# add lines
-		draw.line([
-			(lBuffer+pxScaleBar+barBuffer, m.height-tickHeight-barBuffer), 
-			(lBuffer+pxScaleBar+barBuffer, m.height-lBuffer-barBuffer), 
-			(lBuffer+barBuffer, m.height-lBuffer-barBuffer), 
-			(lBuffer+barBuffer, m.height-tickHeight-barBuffer)], 
-			fill=(0, 0, 0), width=1)
-	
-		# add label
-		draw.text(( ((lBuffer+pxScaleBar+barBuffer+lBuffer)/2)-tw/2, 
-			m.height-barBuffer-lBuffer-lBuffer-th), 
-			scaleText, fill=(0,0,0), font=font)
-	
-	# ...or bottom right
-	else:
-			
-		# add background
-		draw.rectangle([(m.width-pxScaleBar-lBuffer-lBuffer-barBuffer, 
-			m.height-barBuffer-lBuffer-lBuffer-tickHeight),
-			(m.width-barBuffer,m.height-barBuffer)], 
-			outline=(0,0,0), fill=(255,255,255))
-	
-		# add lines
-		draw.line([
-			(m.width-lBuffer-pxScaleBar-barBuffer, m.height-tickHeight-barBuffer), 
-			(m.width-lBuffer-pxScaleBar-barBuffer, m.height-lBuffer-barBuffer), 
-			(m.width-lBuffer-barBuffer, m.height-lBuffer-barBuffer), 
-			(m.width-lBuffer-barBuffer, m.height-tickHeight-barBuffer)], 
-			fill=(0, 0, 0), width=1)
-	
-		# add label
-		draw.text(( 
-			(m.width-lBuffer-lBuffer-pxScaleBar/2) - tw/2, 
-			m.height-barBuffer-lBuffer-lBuffer-th), 
-			scaleText, fill=(0,0,0), font=font)
+	return scalebarImg
