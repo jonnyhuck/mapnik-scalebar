@@ -1,6 +1,6 @@
 """
 Draw a quick and dirty scale bar onto a mapnik map
-
+test
 @author jonnyhuck
 """
 
