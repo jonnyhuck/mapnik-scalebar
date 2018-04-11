@@ -1,9 +1,15 @@
 """
-Create a simple map using Mapnik to demonstrate the scalebar usage.
+* Create a simple map using Mapnik to demonstrate the scalebar usage.
+@author jonnyhuck
 """
+
 import mapnik
 import scalebar
 from PIL import Image
+
+'''
+* Setup map
+'''
 
 # make a map to draw to
 m = mapnik.Map(800,400)
@@ -19,29 +25,12 @@ m.append_style('Countries_Style',style)
 
 # add the layer
 layer = mapnik.Layer('Countries_Layer')
-# layer.datasource = mapnik.Shapefile(file='data/110m-admin-0-countries/ne_110m_admin_0_countries.shp')
 layer.datasource = mapnik.Shapefile(file='data/gb/ne_110m_admin_0_countries.shp')
 layer.styles.append('Countries_Style')
 m.layers.append(layer)
 
 '''
-* Print whole world
-'''
- 
-# # render the map to an image file
-# m.zoom_all()
-# mapnik.render_to_file(m,'images/world.png', 'png')
-# im = Image.open('images/world.png')
-# 
-# # add scalebar
-# sb = scalebar.getScaleBar(m)
-# im.paste(sb, (5, 5))
-#
-# # save output
-# im.save('images/world.png', "png")
-
-'''
-* Print UK using wgs84 and OSGB
+* Render a non-projected (equirectangular) version
 '''
  
 # render the map to an image file
@@ -55,6 +44,10 @@ im.paste(sb, (5, 5))
 
 # save output
 im.save('images/wgs84.png', "png")
+
+'''
+* Render a projected (OS National Grid) version
+'''
 
 # project map
 m.srs = '+proj=tmerc +lat_0=49 +lon_0=-2 +k=0.9996012717 +x_0=400000 +y_0=-100000 +ellps=airy +datum=OSGB36 +units=m +no_defs'
@@ -72,15 +65,3 @@ im.paste(sb, (5, 5))
 
 # save output
 im.save('images/osgb.png', "png")
-
-
-mapnik.save_map(m, 'out.xml')
-
-
-# for l in m.layers:
-# 	for n in l.styles:
-# 		for r in  m.find_style(n).rules:
-# 			print dir(r)
-
-# show the final image
-# im.show()
